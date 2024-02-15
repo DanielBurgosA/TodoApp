@@ -10,7 +10,7 @@ Sigue estos pasos para comenzar a utilizar la aplicación:
 
 Clona este repositorio en tu máquina local utilizando Git:
 
-git clone https://github.com/tuusuario/tuproyecto.git
+git clone https://github.com/DanielBurgosA/TodoAppBack.git
 
 ### Instalación de Dependencias
 
@@ -42,8 +42,9 @@ http://localhost:8081/
 
 ## Soporte
 
-Si tienes algún problema o pregunta, por favor abre un issue en este repositorio: https://github.com/tuusuario/tuproyecto/issues
+Si tienes algún problema o pregunta, por favor abre un issue en este repositorio: https://github.com/DanielBurgosA/TodoAppBack/issues
 
 ## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT: https://opensource.org/licenses/MIT
+
