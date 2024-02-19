@@ -5,7 +5,7 @@ import ListDetail from './ListDetailModal'
 import ToDoContext from '../Context/ToDoContext';
 
 export default function List({list}) {
-    const { getTasks, addTasks, tasks } = useContext(ToDoContext)
+    const { getTasks, deleteList} = useContext(ToDoContext)
 
     const[showList, setShowList] = useState(false)
     const completedCount = list.tasks.reduce((count, task) => task.completed ? count + 1 : count, 0)
@@ -16,13 +16,22 @@ export default function List({list}) {
         setShowList(!showList)
     }
 
+    const handleDelete = () => {
+        deleteList(list.id);
+    }
+
     return (
         <View>
             <Modal animationType='slide' visible={showList} onRequestClose={handleShowList}>
                 <ListDetail list={list} closeModal={handleShowList} />
             </Modal>
 
+
             <Pressable style={[styles.listContainer, {backgroundColor: list.color}]} onPress={handleShowList}>
+                <Pressable onPress={handleDelete} style={styles.deleteContainer} >
+                    <Text style={styles.deleteText}> x </Text>
+                </Pressable>
+
                 <Text style = {styles.listTitle} numberOfLines={1}>
                     {list.name}
                 </Text>
@@ -72,5 +81,14 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: "700",
         color: Colors.white
+    },
+    deleteText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: Colors.white,
+        marginRight: 8,
+    },
+    deleteContainer: {
+        alignSelf: 'flex-end',
     },
 })

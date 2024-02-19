@@ -8,15 +8,26 @@ import ToDoContext from '../Context/ToDoContext';
 import Colors from '../Colors';
 import List from '../Components/ListCard'
 import AddList from '../Components/AddListModal';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Home() {
-  const { toDoLists } = useContext(ToDoContext);
+  const navigation = useNavigation()
+  const { toDoLists, getLists, logOut } = useContext(ToDoContext);
 
   const [addVisible, setAddVisible] = useState(false)
 
   const handleAdd = ()=>{
     setAddVisible(!addVisible)
   }
+
+  const handleLogOut = async ()=>{
+    await logOut
+    navigation.navigate("LogIn")
+  }
+
+  useEffect(() => {
+    getLists()
+  },[])
 
   useEffect(() => {
     }, [toDoLists]);
@@ -26,6 +37,9 @@ export default function Home() {
       <Modal animationType='slide' visible={addVisible} onRequestClose={handleAdd}>
           <AddList closeModal={handleAdd} />
       </Modal>
+      <Pressable onPress={handleLogOut}>
+        <Text style={{color: Colors.blue, flexDirection: "row"}}>Log Out</Text>
+      </Pressable>
       <View style={{ flexDirection: "row" }}>
           <View style = {styles.divider}/>
           <Text style = {styles.title}>
@@ -47,7 +61,7 @@ export default function Home() {
           data={toDoLists} 
           keyExtractor={item => item.id} 
           horizontal={true} 
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={true}
           renderItem={({item})=> <List list={item}/> }/>
       </View>
     </View>

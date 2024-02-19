@@ -5,7 +5,7 @@ import Colors from '../Colors'
 import ToDoContext from '../Context/ToDoContext';
 
 export default function AddList({ closeModal }) {
-  const { toDoLists, createList, getLists} = useContext(ToDoContext)
+  const { createList, getLists} = useContext(ToDoContext)
   const colorsArray = ["#2455D9",  "#24D94E", "#D92424", "#D9D424", "#9424D9", "#D97E24"]
 
   const [name, setName] = useState("")
@@ -29,7 +29,7 @@ export default function AddList({ closeModal }) {
           return;
       }
 
-      createList({name, color, tasks:[], id:(toDoLists.length+1)})
+      createList({Name: name.trimStart(), Color: color})
       setName("")
       getLists()
       closeModal()

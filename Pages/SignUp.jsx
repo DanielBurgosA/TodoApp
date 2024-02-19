@@ -22,6 +22,7 @@ export default function SignUp() {
   const [lastNameError, setLastNameError] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [errorResult, setErrorResult] = useState('')
 
   const handleChangeFirstName = (text) => {
     setFirstName(text);
@@ -54,31 +55,37 @@ export default function SignUp() {
   };
 
   const handleSignUp = async () => {
+    let error = false;
+    if (!firstName || !lastName) {
+      setFirstNameError(!firstName);
+      setLastNameError(!lastName);
+      error=true
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError(true);
+      error=true
+    }
+
+    if (password.length < 7) {
+      setPasswordError(true);
+      error=true
+    }
+    if(error) return
     try {
-      if (!firstName || !lastName) {
-        setFirstNameError(!firstName);
-        setLastNameError(!lastName);
-        return;
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setEmailError(true);
-        return;
-      }
-
-      if (password.length < 6) {
-        setPasswordError(true);
-        return;
-      }
-
-      const userData = { FirstName: firstName, LastName: lastName, Email: email, PasswordHash: password, DateOfBirth: dateOfBirth };
+      const userData = { FirstName: firstName.trimStart(), LastName: lastName.trimStart(), Email: email.trimStart(), PasswordHash: password, DateOfBirth: dateOfBirth };
       await signUp(userData);
-      Alert.alert('Login Successful', 'Hello nice to see you again');
+      setErrorResult('')
+      setEmail('')
+      setPassword('')
+      setFirstName('')
+      setLastName('')
+      setDateOfBirth(new Date())
       navigation.navigate('Home');
     } catch (error) {
       console.error('Error signing up:', error);
-      Alert.alert('Sign Up Failed', 'An error occurred while signing up. Please try again later.');
+      setErrorResult(error.message)
     }
   };
 
@@ -89,13 +96,13 @@ export default function SignUp() {
                 SignUp
             </Text>
             <View style={styles.formcontainer}>
-              <TextInput placeholder='First Name' style={styles.input} onChangeText={handleChangeFirstName}/>
+              <TextInput placeholder='First Name' style={styles.input} onChangeText={handleChangeFirstName} value={firstName}/>
               {firstNameError && <Text style={styles.errorText}>First name is required</Text>}
-              <TextInput placeholder='Last Name' style={styles.input} onChangeText={handleChangeLastName}/>
+              <TextInput placeholder='Last Name' style={styles.input} onChangeText={handleChangeLastName} value={lastName}/>
               {lastNameError && <Text style={styles.errorText}>Last name is required</Text>}
-              <TextInput placeholder='Email' style={styles.input} onChangeText={handleChangeEmail}/>
+              <TextInput placeholder='Email' style={styles.input} onChangeText={handleChangeEmail} value={email}/>
               {emailError && <Text style={styles.errorText}>Invalid email</Text>}
-              <TextInput placeholder='Password' style={styles.input} onChangeText={handleChangePassword} secureTextEntry={true}/>
+              <TextInput placeholder='Password' style={styles.input} onChangeText={handleChangePassword} secureTextEntry={true} value={password}/>
               {passwordError && <Text style={styles.errorText}>Password must be at least 6 characters long</Text>}
               {!Platform.OS === 'web' && (
                 <Pressable onPress={showMode}>
@@ -116,9 +123,10 @@ export default function SignUp() {
                   SignUp
                 </Text>
               </Pressable>
+              {errorResult!=='' && <Text style={styles.errorText}>{errorResult}</Text>}
             </View>
             <Pressable onPress={()=>navigation.navigate('LogIn')}>
-                <Text>Already Signed in?</Text>
+                <Text style={{color: Colors.blue}}>Already signed in?</Text>
             </Pressable>
         </View>
     </SafeAreaView>
@@ -141,7 +149,8 @@ const styles = StyleSheet.create({
   },
   formcontainer:{
       paddingBottom: 8,
-      marginBottom:25 
+      marginBottom:25, 
+      width: 400,
   },
   input: {
       width: '',

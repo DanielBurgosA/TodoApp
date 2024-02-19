@@ -12,15 +12,16 @@ export default function LogIn() {
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
+    const [errorResult, setErrorResult] = useState('')
 
     const handleChangeEmail = (text) => {
         setEmail(text);
-        setEmailError(!isValidEmail(text));
+        setEmailError(false);
     };
     
     const handleChangePassword = (text) => {
         setPassword(text);
-        setPasswordError(text.length < 6); 
+        setPasswordError(false); 
     };
 
     const isValidEmail = (text) => {
@@ -29,18 +30,26 @@ export default function LogIn() {
     };
 
     const handleLogin = async () => {
+        let error = false;
+        if(!isValidEmail(email)){
+            setEmailError(true)
+            error=true
+        }
+        if(password.length<7){
+            setPasswordError(true)
+            error=true
+        }
+        if(error) return
         try {
-            if (!emailError && !passwordError) {
-                const userData = { Email: email, PasswordHash: password };
-                await login(userData);
-                Alert.alert('Login Successful', 'Hello nice to see you again');
-                navigation.navigate('Home');
-            } else {
-                Alert.alert('Invalid Data', 'Please correct the errors in the form.');
-            }
+            const userData = { Email: email, PasswordHash: password };
+            let ans = await login(userData)
+            navigation.navigate('Home');
+            setErrorResult('')
+            setEmail('')
+            setPassword('')
         } catch (error) {
-            console.error('Error logging in:', error);
-            Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+            console.error('Error signing up:', error);
+            setErrorResult(error.message)
         }
     };
 
@@ -51,18 +60,19 @@ export default function LogIn() {
                     LogIn
                 </Text>
                 <View style={styles.formcontainer}>
-                    <TextInput placeholder='Email' style={styles.input} onChangeText={handleChangeEmail} />
+                    <TextInput placeholder='Email' style={styles.input} onChangeText={handleChangeEmail} value={email}/>
                     {emailError && <Text style={styles.errorText}>Invalid email</Text>}
-                    <TextInput placeholder='Password' style={styles.input} onChangeText={handleChangePassword} secureTextEntry={true} />
+                    <TextInput placeholder='Password' style={styles.input} onChangeText={handleChangePassword} secureTextEntry={true}  value={password}/>
                     {passwordError && <Text style={styles.errorText}>Password must be at least 6 characters long</Text>}
                     <Pressable style={styles.button} onPress={handleLogin}>
                         <Text style={styles.buttonText}>
                             LogIn
                         </Text>
                     </Pressable>
+                    {errorResult!=='' && <Text style={styles.errorText}>{errorResult}</Text>}
                 </View>
                 <Pressable onPress={() => navigation.navigate('SignUp')}>
-                    <Text>New to the app?</Text>
+                    <Text style={{color: Colors.blue}} >New in the app?</Text>
                 </Pressable>
             </View>
         </SafeAreaView>
@@ -85,7 +95,8 @@ const styles = StyleSheet.create({
     },
     formcontainer: {
         paddingBottom: 8,
-        marginBottom: 25
+        marginBottom: 25,
+        width: 400,
     },
     input: {
         width: '100%',

@@ -9,9 +9,17 @@ const ToDoContext = createContext();
 export const ToDoProvider = ({ children }) => {
   const [toDoLists, setToDoLists] = useState();
   const [tasks, setTasks] = useState([]);
-  const [token, setToken] = useState(null);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   const API_URL = 'http://localhost:5000/api/'
+
+  const handleApiError = (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 404)) {
+      setIsSessionExpired(true);
+    } else {
+      console.error('Error en la llamada a la API:', error);
+    }
+  };
 
   const fetchToken = async () => {
     try {
@@ -25,23 +33,17 @@ export const ToDoProvider = ({ children }) => {
     }
   }
 
-  const saveToken = async (token) => {
+  const getLists = async () => {
     try {
-      await AsyncStorage.setItem('token', token);
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${API_URL}todoList`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      setToDoLists(response.data);
     } catch (error) {
-      console.error('Error saving token:', error);
-    }
-  };
-
-  const getUserIdFromToken = () => {
-    try {
-      const payload = token.split('.')[1];
-      const decodedPayload = atob(payload);
-      const { userId } = JSON.parse(decodedPayload);
-      return userId;
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
+      console.log('Error fetching todo lists:', error);
     }
   };
 
@@ -50,10 +52,21 @@ export const ToDoProvider = ({ children }) => {
       const response = await axios.post(`${API_URL}auth/login`, userData);
       const token = response.data;
       await AsyncStorage.setItem('token', token);
-      await console.log(await fetchToken())
-      return true
+      getLists()
+      return "Welcome back"
     } catch (error) {
-      throw error.response.data;
+      throw new Error (error.response.data);
+    }
+  };
+
+  const logOut = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+      localStorage.removeItem('token')
+      setToDoLists(null);
+      setTasks([]);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
     }
   };
 
@@ -62,53 +75,148 @@ export const ToDoProvider = ({ children }) => {
       const response = await axios.post(`${API_URL}auth/register`, userData);
       const token = response.data;
       await AsyncStorage.setItem('token', token);
-      return true;
+      getLists()
+      return "Nice to meet you";
     } catch (error) {
-      throw error.response.data;
+      throw new Error (error.response.data);
     }
   };
 
-  const getLists = () => {
-    setToDoLists([...tempData]);
+  const createList = async (newListData) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      console.log(await fetchToken(token))
+      const response = await axios.post(`${API_URL}todoList`, newListData, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      console.log('New list created:', response.data);
+      getLists(); 
+    } catch (error) {
+      console.log('Error creating list:', error);
+    }
   };
 
-  const createList = (newList) => {
-    tempData.push(newList)
-    setToDoLists([...toDoLists]);
+  const updateList = async (listId, updatedListData) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.put(`${API_URL}todoList/${+listId}`, updatedListData, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      console.log('List updated:', response.data);
+      getLists();
+    } catch (error) {
+      console.log('Error updating list:', error);
+    }
   };
 
-  const getTasks = (id) =>{
-    const list = toDoLists.find(l=>l.id===id)
-    setTasks([...list.tasks])
-  }
+  const deleteList = async (listId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.delete(`${API_URL}todoList/${+listId}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      console.log('List deleted:', response.data);
+      getLists(); // Actualizar la lista después de eliminarla
+    } catch (error) {
+      console.log('Error deleting list:', error);
+    }
+  };
 
-  const updateTasks = (idlist, idtask) =>{
-    tempData.find(l=>l.id===idlist).tasks.find(t=>t.id===idtask).completed= !tempData.find(l=>l.id===idlist).tasks.find(t=>t.id===idtask).completed
-    getLists()
-  }
+  /////tasks/////////
+  const getTasks = async (listId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${API_URL}task/${+listId}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      await AsyncStorage.setItem('data', response.data);
+      setTasks(response.data);
+    } catch (error) {
+      console.log('Error fetching tasks:', error);
+    }
+  };
 
-  const addTasks = (id, t) =>{
-    tempData.find(l=>l.id===id).tasks.push(t)
-    getLists();
-  }
+  const updateTasks = async (listId, taskId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.put(`${API_URL}task/${+taskId}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      console.log('Task updated:', response.data);
+      getLists();
+      getTasks(listId)
+    } catch (error) {
+      console.log('Error updating task:', error);
+    }
+  };
 
-  useEffect(()=>{
-    getLists();
-}, [])
+  const addTasks = async (idList, task) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.post(`${API_URL}task`, {
+        ListId: idList,
+        Task: {
+          Title: task.title,
+          Completed: false,
+        },
+      }, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      console.log('New task added:', response.data);
+      getLists();
+      getTasks(idList);
+    } catch (error) {
+      console.log('Error adding task:', error);
+    }
+  };
+
+  const deleteTask = async (listId, taskId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.delete(
+        `${API_URL}task/${+taskId}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+      console.log('Task deleted:', response.data);
+      getTasks(listId);
+      getLists(); 
+    } catch (error) {
+      console.log('Error deleting task:', error);
+    }
+  };
 
   const value = {
     login,
     signUp,
+    logOut,
 
     toDoLists,
     createList,
     getLists,
+    updateList,
+    deleteList,
     
-
     getTasks,
     addTasks,
     tasks,
-    updateTasks
+    updateTasks,
+    deleteTask,
   }
 
   return (
